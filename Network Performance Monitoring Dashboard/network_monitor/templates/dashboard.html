@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Performance Monitoring Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        canvas {
+            max-width: 600px;
+            margin: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Network Performance Monitoring Dashboard</h1>
+    <canvas id="latencyChart"></canvas>
+    <canvas id="packetLossChart"></canvas>
+
+    <script>
+        const latencyData = [];
+        const packetLossData = [];
+        const latencyChart = new Chart(document.getElementById('latencyChart'), {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Latency (ms)',
+                    data: latencyData,
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    fill: false
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        const packetLossChart = new Chart(document.getElementById('packetLossChart'), {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Packet Loss (%)',
+                    data: packetLossData,
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    fill: false
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        function fetchMetrics() {
+            fetch('/metrics')
+                .then(response => response.json())
+                .then(data => {
+                    const timeLabel = new Date().toLocaleTimeString();
+                    latencyData.push(data.latency);
+                    packetLossData.push(data.packet_loss * 100); // Convert to percentage
+                    latencyChart.data.labels.push(timeLabel);
+                    packetLossChart.data.labels.push(timeLabel);
+
+                    // Keep only the last 20 data points
+                    if (latencyData.length > 20) {
+                        latencyData.shift();
+                        packetLossData.shift();
+                        latencyChart.data.labels.shift();
+                        packetLossChart.data.labels.shift();
+                    }
+
+                    latencyChart.update();
+                    packetLossChart.update();
+                })
+                .catch(error => console.error('Error fetching metrics:', error));
+        }
+
+        setInterval(fetchMetrics, 2000); // Fetch metrics every 2 seconds
+    </script>
+</body>
+</html>
